@@ -60,5 +60,5 @@ The application is fully containerized using Docker and Docker Compose for easy 
 - **Docker Compose**: Service configuration with volume persistence for bell files
 - **Health Checks**: Automated container health monitoring
 - **Data Persistence**: Bell files stored in Docker volumes to persist between restarts
-- **Port Mapping**: Application accessible on port 5000
+- **Port Mapping**: Application accessible on port 8080
 - **Environment**: Streamlit configured for headless operation

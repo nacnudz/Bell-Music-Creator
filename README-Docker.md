@@ -15,7 +15,7 @@ This document explains how to run the Bell Music Creator application using Docke
    ```
 
 2. **Access the application:**
-   Open your browser and navigate to `http://localhost:5000`
+   Open your browser and navigate to `http://localhost:8080`
 
 3. **Stop the application:**
    ```bash
@@ -52,12 +52,12 @@ docker-compose down -v
 ## Configuration
 
 ### Port Configuration
-- The application runs on port 5000 inside the container
-- It's mapped to port 5000 on your host machine
+- The application runs on port 8080 inside the container
+- It's mapped to port 8080 on your host machine
 - To change the host port, modify the `docker-compose.yml` file:
   ```yaml
   ports:
-    - "8080:5000"  # This would map to localhost:8080
+    - "9000:8080"  # This would map to localhost:9000
   ```
 
 ### Data Persistence

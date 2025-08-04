@@ -4,7 +4,7 @@ services:
   bell-music-creator:
     build: .
     ports:
-      - "5000:5000"
+      - "8080:8080"
     volumes:
       # Persist bell files between container restarts
       - bell_files_data:/app/bell_files
@@ -14,7 +14,7 @@ services:
       - STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/_stcore/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/_stcore/health"]
       interval: 30s
       timeout: 10s
       retries: 3
