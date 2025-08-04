@@ -52,7 +52,7 @@ def validate_audio_file(uploaded_file):
     
     return True, "Valid file"
 
-def process_audio_files(file1_data, file2_data, file1_name, file2_name, progress_bar, status_text, is_file2_from_library=False):
+def process_audio_files(file1_data, file2_data, file1_name, file2_name, progress_bar, status_text, is_file2_from_library=False, crop_duration=180, fade_duration=2):
     """Process the two audio files according to requirements"""
     try:
         # Update progress
@@ -82,20 +82,20 @@ def process_audio_files(file1_data, file2_data, file1_name, file2_name, progress
                 audio2 = AudioSegment.from_file(tmp2.name)
         
         progress_bar.progress(40)
-        status_text.text("Cropping first file to 3 minutes...")
+        status_text.text(f"Cropping music file to {crop_duration} seconds...")
         
-        # Crop first audio to exactly 3 minutes (180 seconds)
-        three_minutes_ms = 3 * 60 * 1000  # 3 minutes in milliseconds
-        if len(audio1) > three_minutes_ms:
-            audio1_cropped = audio1[:three_minutes_ms]
+        # Crop first audio to specified duration
+        crop_duration_ms = crop_duration * 1000  # Convert to milliseconds
+        if len(audio1) > crop_duration_ms:
+            audio1_cropped = audio1[:crop_duration_ms]
         else:
             audio1_cropped = audio1
         
         progress_bar.progress(55)
-        status_text.text("Applying fade out effect...")
+        status_text.text(f"Applying {fade_duration} second fade out effect...")
         
-        # Apply fade out effect (2 seconds fade out)
-        fade_duration_ms = 2000  # 2 seconds
+        # Apply fade out effect with specified duration
+        fade_duration_ms = fade_duration * 1000  # Convert to milliseconds
         audio1_with_fade = audio1_cropped.fade_out(fade_duration_ms)
         
         progress_bar.progress(70)
@@ -144,24 +144,51 @@ def main():
     # Instructions
     with st.expander("📋 How it works", expanded=True):
         st.markdown("""
-        1. **Upload music file** (MP3 or WAV) - will be cropped to exactly 3 minutes
+        1. **Upload music file** (MP3 or WAV) - will be cropped to your specified length
         2. **Choose bell file** - select from existing bell files or upload a new one
-        3. The app will:
-           - Crop the music file to 3 minutes
-           - Add a 2-second fade out effect to the music file
+        3. **Customize settings** - adjust crop length and fade out duration
+        4. The app will:
+           - Crop the music file to your specified duration
+           - Add a fade out effect with your chosen duration
            - Append the selected bell file to the processed music file
            - Convert the result to MP3 format
-        4. **Download** your processed audio file
+        5. **Download** your processed audio file with automatic naming
         
         **Bell Files:** You can build a library of bell files by uploading new ones, which will be saved for future use.
         """)
+    
+    # Processing settings section
+    st.subheader("⚙️ Processing Settings")
+    settings_col1, settings_col2 = st.columns(2)
+    
+    with settings_col1:
+        crop_duration = st.number_input(
+            "Music file length (seconds)",
+            min_value=10,
+            max_value=600,
+            value=180,
+            step=10,
+            help="How long to crop the music file (10 seconds to 10 minutes)"
+        )
+    
+    with settings_col2:
+        fade_duration = st.number_input(
+            "Fade out duration (seconds)",
+            min_value=0.5,
+            max_value=10.0,
+            value=2.0,
+            step=0.5,
+            help="Length of fade out effect at the end of the music file"
+        )
+    
+    st.markdown("---")
     
     # Create two columns for file uploads
     col1, col2 = st.columns(2)
     
     with col1:
         st.subheader("Music File")
-        st.caption("Will be cropped to 3 minutes with fade out")
+        st.caption(f"Will be cropped to {crop_duration} seconds with {fade_duration}s fade out")
         uploaded_file1 = st.file_uploader(
             "Choose music file",
             type=['mp3', 'wav'],
@@ -245,6 +272,28 @@ def main():
         is_valid1, message1 = validate_audio_file(uploaded_file1)
         
         if is_valid1:
+            # Filename customization
+            st.markdown("---")
+            st.subheader("📝 Output File Name")
+            
+            # Generate automatic filename
+            music_basename = os.path.splitext(uploaded_file1.name)[0]
+            auto_filename = f"{music_basename}_Bell.mp3"
+            
+            custom_filename = st.text_input(
+                "File name (without extension)",
+                value=os.path.splitext(auto_filename)[0],
+                help="The file will be saved as MP3 format"
+            )
+            
+            # Ensure .mp3 extension
+            if not custom_filename.endswith('.mp3'):
+                final_filename = f"{custom_filename}.mp3"
+            else:
+                final_filename = custom_filename
+                
+            st.info(f"Download file name: **{final_filename}**")
+            
             if st.button("🎵 Process Audio Files", type="primary", use_container_width=True):
                 # Create progress indicators
                 progress_bar = st.progress(0)
@@ -258,7 +307,9 @@ def main():
                     bell_file_name,
                     progress_bar,
                     status_text,
-                    is_from_library
+                    is_from_library,
+                    crop_duration,
+                    fade_duration
                 )
                 
                 if error:
@@ -268,15 +319,11 @@ def main():
                 else:
                     st.success("✅ Audio processing completed successfully!")
                     
-                    # Generate download filename
-                    timestamp = int(time.time())
-                    download_filename = f"processed_audio_{timestamp}.mp3"
-                    
-                    # Provide download button
+                    # Provide download button with custom filename
                     st.download_button(
                         label="📥 Download Processed Audio (MP3)",
                         data=processed_data,
-                        file_name=download_filename,
+                        file_name=final_filename,
                         mime="audio/mpeg",
                         type="secondary",
                         use_container_width=True
@@ -299,10 +346,11 @@ def main():
         st.markdown("""
         **Supported Formats:** MP3, WAV  
         **Processing Steps:**
-        - First file: Cropped to exactly 180 seconds (3 minutes)
-        - Fade out: 2-second fade applied to end of first file
-        - Combination: Second file appended seamlessly
+        - Music file: Cropped to your specified duration (10-600 seconds)
+        - Fade out: Customizable fade duration (0.5-10 seconds) applied to end of music file
+        - Combination: Bell file appended seamlessly after fade
         - Output: MP3 format at 192kbps bitrate
+        - Naming: Automatic naming as "MusicFileName_Bell.mp3" with option to customize
         
         **Requirements:** This application uses FFmpeg for audio processing.
         """)
