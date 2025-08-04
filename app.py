@@ -190,7 +190,7 @@ def main():
     settings_col1, settings_col2 = st.columns(2)
     
     with settings_col1:
-        st.write("**Music file length**")
+        st.subheader("Music file length")
         duration_col1, duration_col2 = st.columns(2)
         with duration_col1:
             minutes = st.number_input(
@@ -217,13 +217,15 @@ def main():
             st.warning("Minimum duration is 10 seconds")
     
     with settings_col2:
+        st.subheader("Fade out duration")
         fade_duration = st.number_input(
-            "Fade out duration (seconds)",
+            "Seconds",
             min_value=0.5,
             max_value=10.0,
             value=3.0,
             step=0.5,
-            help="Length of fade out effect at the end of the music file"
+            help="Length of fade out effect at the end of the music file",
+            key="fade_seconds"
         )
     
     # Update music file caption with current settings
