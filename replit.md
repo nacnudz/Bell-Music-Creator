@@ -50,3 +50,15 @@ Preferred communication style: Simple, everyday language.
 ## Audio Processing
 - **Normalization Effects**: PyDub's built-in audio normalization capabilities
 - **Format Support**: Native MP3 and WAV file format handling through PyDub
+
+# Deployment
+
+## Docker Configuration
+The application is fully containerized using Docker and Docker Compose for easy deployment:
+
+- **Dockerfile**: Python 3.11-slim base with FFmpeg for audio processing
+- **Docker Compose**: Service configuration with volume persistence for bell files
+- **Health Checks**: Automated container health monitoring
+- **Data Persistence**: Bell files stored in Docker volumes to persist between restarts
+- **Port Mapping**: Application accessible on port 5000
+- **Environment**: Streamlit configured for headless operation

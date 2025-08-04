@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  bell-music-creator:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      # Persist bell files between container restarts
+      - bell_files_data:/app/bell_files
+      # Optional: Mount local directory for development
+      # - ./bell_files:/app/bell_files
+    environment:
+      - STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  bell_files_data:
+    driver: local
