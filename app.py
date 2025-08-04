@@ -172,8 +172,15 @@ def main():
         if uploaded_file1:
             is_valid1, message1 = validate_audio_file(uploaded_file1)
             if is_valid1:
-                st.success(f"✅ {uploaded_file1.name} loaded successfully")
-                st.info(f"File size: {uploaded_file1.size / (1024*1024):.1f} MB")
+                success_placeholder = st.empty()
+                success_placeholder.success(f"✅ {uploaded_file1.name} loaded successfully")
+                # Auto-dismiss after 2 seconds
+                import threading
+                def clear_success():
+                    import time
+                    time.sleep(2)
+                    success_placeholder.empty()
+                threading.Thread(target=clear_success, daemon=True).start()
             else:
                 st.error(f"❌ {message1}")
     
@@ -209,7 +216,6 @@ def main():
     st.markdown("---")
     with col2:
         st.subheader("Choose Bell File")
-        st.caption("Will be appended to the processed music file")
         
         # Get available bell files
         available_bells = get_available_bell_files()
@@ -238,8 +244,14 @@ def main():
             if uploaded_file2:
                 is_valid2, message2 = validate_audio_file(uploaded_file2)
                 if is_valid2:
-                    st.success(f"✅ {uploaded_file2.name} loaded successfully")
-                    st.info(f"File size: {uploaded_file2.size / (1024*1024):.1f} MB")
+                    bell_success_placeholder = st.empty()
+                    bell_success_placeholder.success(f"✅ {uploaded_file2.name} loaded successfully")
+                    # Auto-dismiss after 2 seconds
+                    def clear_bell_success():
+                        import time
+                        time.sleep(2)
+                        bell_success_placeholder.empty()
+                    threading.Thread(target=clear_bell_success, daemon=True).start()
                     
                     # Ask if user wants to save this bell file
                     if st.button("💾 Save this bell file for future use", key="save_bell"):
@@ -254,11 +266,8 @@ def main():
         else:
             # Using existing bell file
             if selected_bell:
-                st.success(f"✅ {selected_bell} selected")
                 bell_file_path = os.path.join(BELL_FILES_DIR, selected_bell)
                 if os.path.exists(bell_file_path):
-                    file_size = os.path.getsize(bell_file_path) / (1024*1024)
-                    st.info(f"File size: {file_size:.1f} MB")
                     bell_file_name = selected_bell
                     is_from_library = True
     
