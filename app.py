@@ -175,15 +175,27 @@ def main():
         if uploaded_file1:
             is_valid1, message1 = validate_audio_file(uploaded_file1)
             if is_valid1:
-                success_placeholder = st.empty()
-                success_placeholder.success(f"✅ {uploaded_file1.name} loaded successfully")
-                # Auto-dismiss after 2 seconds
-                import threading
-                def clear_success():
-                    import time
-                    time.sleep(2)
-                    success_placeholder.empty()
-                threading.Thread(target=clear_success, daemon=True).start()
+                success_container = st.container()
+                with success_container:
+                    st.success(f"✅ {uploaded_file1.name} loaded successfully")
+                
+                # JavaScript to auto-hide success message after 2 seconds
+                st.markdown("""
+                <script>
+                setTimeout(function() {
+                    var successElements = document.querySelectorAll('[data-testid="stSuccess"]');
+                    successElements.forEach(function(element) {
+                        if (element.textContent.includes('loaded successfully')) {
+                            element.style.transition = 'opacity 0.5s';
+                            element.style.opacity = '0';
+                            setTimeout(function() {
+                                element.style.display = 'none';
+                            }, 500);
+                        }
+                    });
+                }, 2000);
+                </script>
+                """, unsafe_allow_html=True)
             else:
                 st.error(f"❌ {message1}")
     
@@ -266,14 +278,27 @@ def main():
             if uploaded_file2:
                 is_valid2, message2 = validate_audio_file(uploaded_file2)
                 if is_valid2:
-                    bell_success_placeholder = st.empty()
-                    bell_success_placeholder.success(f"✅ {uploaded_file2.name} loaded successfully")
-                    # Auto-dismiss after 2 seconds
-                    def clear_bell_success():
-                        import time
-                        time.sleep(2)
-                        bell_success_placeholder.empty()
-                    threading.Thread(target=clear_bell_success, daemon=True).start()
+                    success_container = st.container()
+                    with success_container:
+                        st.success(f"✅ {uploaded_file2.name} loaded successfully")
+                    
+                    # JavaScript to auto-hide success message after 2 seconds
+                    st.markdown("""
+                    <script>
+                    setTimeout(function() {
+                        var successElements = document.querySelectorAll('[data-testid="stSuccess"]');
+                        successElements.forEach(function(element) {
+                            if (element.textContent.includes('loaded successfully')) {
+                                element.style.transition = 'opacity 0.5s';
+                                element.style.opacity = '0';
+                                setTimeout(function() {
+                                    element.style.display = 'none';
+                                }, 500);
+                            }
+                        });
+                    }, 2000);
+                    </script>
+                    """, unsafe_allow_html=True)
                     
                     # Ask if user wants to save this bell file
                     if st.button("💾 Save this bell file for future use", key="save_bell"):
