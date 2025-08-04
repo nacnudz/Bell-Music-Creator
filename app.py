@@ -157,7 +157,28 @@ def main():
         **Bell Files:** You can build a library of bell files by uploading new ones, which will be saved for future use.
         """)
     
-    # Processing settings section
+    # Create two columns for file uploads
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("Music File")
+        uploaded_file1 = st.file_uploader(
+            "Choose music file",
+            type=['mp3', 'wav'],
+            key="file1",
+            help="Upload MP3 or WAV file (max 100MB)"
+        )
+        
+        if uploaded_file1:
+            is_valid1, message1 = validate_audio_file(uploaded_file1)
+            if is_valid1:
+                st.success(f"✅ {uploaded_file1.name} loaded successfully")
+                st.info(f"File size: {uploaded_file1.size / (1024*1024):.1f} MB")
+            else:
+                st.error(f"❌ {message1}")
+    
+    # Processing settings section - moved after music file
+    st.markdown("---")
     st.subheader("⚙️ Processing Settings")
     settings_col1, settings_col2 = st.columns(2)
     
@@ -181,29 +202,11 @@ def main():
             help="Length of fade out effect at the end of the music file"
         )
     
-    st.markdown("---")
-    
-    # Create two columns for file uploads
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("Music File")
+    # Update music file caption with current settings
+    if uploaded_file1:
         st.caption(f"Will be cropped to {crop_duration} seconds with {fade_duration}s fade out")
-        uploaded_file1 = st.file_uploader(
-            "Choose music file",
-            type=['mp3', 'wav'],
-            key="file1",
-            help="Upload MP3 or WAV file (max 100MB)"
-        )
-        
-        if uploaded_file1:
-            is_valid1, message1 = validate_audio_file(uploaded_file1)
-            if is_valid1:
-                st.success(f"✅ {uploaded_file1.name} loaded successfully")
-                st.info(f"File size: {uploaded_file1.size / (1024*1024):.1f} MB")
-            else:
-                st.error(f"❌ {message1}")
     
+    st.markdown("---")
     with col2:
         st.subheader("Choose Bell File")
         st.caption("Will be appended to the processed music file")
