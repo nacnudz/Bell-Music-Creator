@@ -185,7 +185,7 @@ def main():
                     success_placeholder.empty()
                 threading.Thread(target=clear_success, daemon=True).start()
             else:
-                st.warning(f"⚠️ {message1}")
+                st.error(f"❌ {message1}")
     
     # Processing settings section - moved after music file
     st.markdown("---")
@@ -193,7 +193,7 @@ def main():
     settings_col1, settings_col2 = st.columns(2)
     
     with settings_col1:
-        st.subheader("Music file length")
+        st.write("**Music file length**")
         duration_col1, duration_col2 = st.columns(2)
         with duration_col1:
             minutes = st.number_input(
@@ -220,7 +220,7 @@ def main():
             st.warning("Minimum duration is 10 seconds")
     
     with settings_col2:
-        st.subheader("Fade out duration")
+        st.write("**Fade out duration**")
         fade_duration = st.number_input(
             "Seconds",
             min_value=0.5,
@@ -284,7 +284,7 @@ def main():
                     bell_file_name = uploaded_file2.name
                     bell_file_data = uploaded_file2.getvalue()
                 else:
-                    st.warning(f"⚠️ {message2}")
+                    st.error(f"❌ {message2}")
         else:
             # Using existing bell file
             if selected_bell:
@@ -343,7 +343,7 @@ def main():
                 )
                 
                 if error:
-                    st.warning(f"⚠️ Processing failed: {error}")
+                    st.error(f"❌ Processing failed: {error}")
                     progress_bar.empty()
                     status_text.empty()
                 else:
@@ -363,7 +363,7 @@ def main():
                     progress_bar.empty()
                     status_text.empty()
         else:
-            st.warning("⚠️ Please upload a valid music file before processing.")
+            st.error("❌ Please upload a valid music file before processing.")
     else:
         if not has_music_file:
             st.info("👆 Please upload a music file to begin processing.")
