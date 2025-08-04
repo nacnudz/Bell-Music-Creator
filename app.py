@@ -157,11 +157,14 @@ def main():
         **Bell Files:** You can build a library of bell files by uploading new ones, which will be saved for future use.
         """)
     
+    # Audio Files section
+    st.subheader("🎵 Audio Files")
+    
     # Create two columns for file uploads
     col1, col2 = st.columns(2)
     
     with col1:
-        st.subheader("Music File")
+        st.write("**Music File**")
         uploaded_file1 = st.file_uploader(
             "Choose music file",
             type=['mp3', 'wav'],
@@ -182,7 +185,7 @@ def main():
                     success_placeholder.empty()
                 threading.Thread(target=clear_success, daemon=True).start()
             else:
-                st.error(f"❌ {message1}")
+                st.warning(f"⚠️ {message1}")
     
     # Processing settings section - moved after music file
     st.markdown("---")
@@ -234,7 +237,7 @@ def main():
     
     st.markdown("---")
     with col2:
-        st.subheader("Choose Bell File")
+        st.write("**Choose Bell File**")
         
         # Get available bell files
         available_bells = get_available_bell_files()
@@ -281,7 +284,7 @@ def main():
                     bell_file_name = uploaded_file2.name
                     bell_file_data = uploaded_file2.getvalue()
                 else:
-                    st.error(f"❌ {message2}")
+                    st.warning(f"⚠️ {message2}")
         else:
             # Using existing bell file
             if selected_bell:
@@ -340,7 +343,7 @@ def main():
                 )
                 
                 if error:
-                    st.error(f"❌ Processing failed: {error}")
+                    st.warning(f"⚠️ Processing failed: {error}")
                     progress_bar.empty()
                     status_text.empty()
                 else:
