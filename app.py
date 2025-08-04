@@ -8,10 +8,31 @@ import time
 
 # Configure page
 st.set_page_config(
-    page_title="Audio Processor",
-    page_icon="🎵",
+    page_title="Bell Music Creator",
+    page_icon="🔔",
     layout="wide"
 )
+
+# Create bell files directory if it doesn't exist
+BELL_FILES_DIR = "bell_files"
+if not os.path.exists(BELL_FILES_DIR):
+    os.makedirs(BELL_FILES_DIR)
+
+def get_available_bell_files():
+    """Get list of available bell files"""
+    bell_files = []
+    if os.path.exists(BELL_FILES_DIR):
+        for file in os.listdir(BELL_FILES_DIR):
+            if file.lower().endswith(('.mp3', '.wav')):
+                bell_files.append(file)
+    return sorted(bell_files)
+
+def save_bell_file(uploaded_file):
+    """Save uploaded bell file to bell files directory"""
+    file_path = os.path.join(BELL_FILES_DIR, uploaded_file.name)
+    with open(file_path, "wb") as f:
+        f.write(uploaded_file.getbuffer())
+    return file_path
 
 def validate_audio_file(uploaded_file):
     """Validate if the uploaded file is a supported audio format"""
@@ -31,7 +52,7 @@ def validate_audio_file(uploaded_file):
     
     return True, "Valid file"
 
-def process_audio_files(file1_data, file2_data, file1_name, file2_name, progress_bar, status_text):
+def process_audio_files(file1_data, file2_data, file1_name, file2_name, progress_bar, status_text, is_file2_from_library=False):
     """Process the two audio files according to requirements"""
     try:
         # Update progress
@@ -45,13 +66,20 @@ def process_audio_files(file1_data, file2_data, file1_name, file2_name, progress
             audio1 = AudioSegment.from_file(tmp1.name)
         
         progress_bar.progress(25)
-        status_text.text("Loading second audio file...")
+        status_text.text("Loading bell audio file...")
         
-        # Load second audio file
-        with tempfile.NamedTemporaryFile(delete=False, suffix=f".{file2_name.split('.')[-1]}") as tmp2:
-            tmp2.write(file2_data)
-            tmp2.flush()
-            audio2 = AudioSegment.from_file(tmp2.name)
+        # Load second audio file (bell file)
+        if is_file2_from_library:
+            # Load directly from bell files directory
+            bell_file_path = os.path.join(BELL_FILES_DIR, file2_name)
+            audio2 = AudioSegment.from_file(bell_file_path)
+            tmp2 = None  # No temp file needed
+        else:
+            # Load from uploaded file
+            with tempfile.NamedTemporaryFile(delete=False, suffix=f".{file2_name.split('.')[-1]}") as tmp2:
+                tmp2.write(file2_data)
+                tmp2.flush()
+                audio2 = AudioSegment.from_file(tmp2.name)
         
         progress_bar.progress(40)
         status_text.text("Cropping first file to 3 minutes...")
@@ -90,7 +118,8 @@ def process_audio_files(file1_data, file2_data, file1_name, file2_name, progress
         # Clean up temporary files
         try:
             os.unlink(tmp1.name)
-            os.unlink(tmp2.name)
+            if tmp2 is not None:
+                os.unlink(tmp2.name)
         except:
             pass  # Ignore cleanup errors
         
@@ -101,7 +130,7 @@ def process_audio_files(file1_data, file2_data, file1_name, file2_name, progress
         try:
             if 'tmp1' in locals() and tmp1:
                 os.unlink(tmp1.name)
-            if 'tmp2' in locals() and tmp2:
+            if 'tmp2' in locals() and tmp2 is not None:
                 os.unlink(tmp2.name)
         except:
             pass
@@ -116,13 +145,15 @@ def main():
     with st.expander("📋 How it works", expanded=True):
         st.markdown("""
         1. **Upload music file** (MP3 or WAV) - will be cropped to exactly 3 minutes
-        2. **Upload bell audio file** (MP3 or WAV) - will be appended to the music
+        2. **Choose bell file** - select from existing bell files or upload a new one
         3. The app will:
            - Crop the music file to 3 minutes
            - Add a 2-second fade out effect to the music file
-           - Append the bell audio file to the processed music file
+           - Append the selected bell file to the processed music file
            - Convert the result to MP3 format
         4. **Download** your processed audio file
+        
+        **Bell Files:** You can build a library of bell files by uploading new ones, which will be saved for future use.
         """)
     
     # Create two columns for file uploads
@@ -147,32 +178,73 @@ def main():
                 st.error(f"❌ {message1}")
     
     with col2:
-        st.subheader("Bell Audio File")
+        st.subheader("Choose Bell File")
         st.caption("Will be appended to the processed music file")
-        uploaded_file2 = st.file_uploader(
-            "Choose bell audio file",
-            type=['mp3', 'wav'],
-            key="file2",
-            help="Upload MP3 or WAV file (max 100MB)"
+        
+        # Get available bell files
+        available_bells = get_available_bell_files()
+        bell_options = available_bells + ["Upload new bell file..."]
+        
+        selected_bell = st.selectbox(
+            "Select a bell file",
+            options=bell_options,
+            key="bell_selector",
+            help="Choose from existing bell files or upload a new one"
         )
         
-        if uploaded_file2:
-            is_valid2, message2 = validate_audio_file(uploaded_file2)
-            if is_valid2:
-                st.success(f"✅ {uploaded_file2.name} loaded successfully")
-                st.info(f"File size: {uploaded_file2.size / (1024*1024):.1f} MB")
-            else:
-                st.error(f"❌ {message2}")
+        uploaded_file2 = None
+        bell_file_name = None
+        bell_file_data = None
+        is_from_library = False
+        
+        if selected_bell == "Upload new bell file...":
+            uploaded_file2 = st.file_uploader(
+                "Upload new bell file",
+                type=['mp3', 'wav'],
+                key="file2",
+                help="Upload MP3 or WAV file (max 100MB)"
+            )
+            
+            if uploaded_file2:
+                is_valid2, message2 = validate_audio_file(uploaded_file2)
+                if is_valid2:
+                    st.success(f"✅ {uploaded_file2.name} loaded successfully")
+                    st.info(f"File size: {uploaded_file2.size / (1024*1024):.1f} MB")
+                    
+                    # Ask if user wants to save this bell file
+                    if st.button("💾 Save this bell file for future use", key="save_bell"):
+                        save_bell_file(uploaded_file2)
+                        st.success(f"Bell file saved! It will be available in the dropdown next time.")
+                        st.rerun()
+                    
+                    bell_file_name = uploaded_file2.name
+                    bell_file_data = uploaded_file2.getvalue()
+                else:
+                    st.error(f"❌ {message2}")
+        else:
+            # Using existing bell file
+            if selected_bell:
+                st.success(f"✅ {selected_bell} selected")
+                bell_file_path = os.path.join(BELL_FILES_DIR, selected_bell)
+                if os.path.exists(bell_file_path):
+                    file_size = os.path.getsize(bell_file_path) / (1024*1024)
+                    st.info(f"File size: {file_size:.1f} MB")
+                    bell_file_name = selected_bell
+                    is_from_library = True
     
     # Process button
     st.markdown("---")
     
-    if uploaded_file1 and uploaded_file2:
-        # Validate both files
+    # Check if we have both music file and bell file ready
+    has_music_file = uploaded_file1 is not None
+    has_bell_file = (bell_file_name is not None and 
+                     (is_from_library or bell_file_data is not None))
+    
+    if has_music_file and has_bell_file:
+        # Validate music file
         is_valid1, message1 = validate_audio_file(uploaded_file1)
-        is_valid2, message2 = validate_audio_file(uploaded_file2)
         
-        if is_valid1 and is_valid2:
+        if is_valid1:
             if st.button("🎵 Process Audio Files", type="primary", use_container_width=True):
                 # Create progress indicators
                 progress_bar = st.progress(0)
@@ -181,11 +253,12 @@ def main():
                 # Process the files
                 processed_data, error = process_audio_files(
                     uploaded_file1.getvalue(),
-                    uploaded_file2.getvalue(),
+                    bell_file_data,
                     uploaded_file1.name,
-                    uploaded_file2.name,
+                    bell_file_name,
                     progress_bar,
-                    status_text
+                    status_text,
+                    is_from_library
                 )
                 
                 if error:
@@ -213,9 +286,12 @@ def main():
                     progress_bar.empty()
                     status_text.empty()
         else:
-            st.warning("⚠️ Please upload valid audio files before processing.")
+            st.warning("⚠️ Please upload a valid music file before processing.")
     else:
-        st.info("👆 Please upload both audio files to begin processing.")
+        if not has_music_file:
+            st.info("👆 Please upload a music file to begin processing.")
+        elif not has_bell_file:
+            st.info("👆 Please select or upload a bell file to begin processing.")
     
     # Footer with technical information
     st.markdown("---")

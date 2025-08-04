@@ -1,6 +1,6 @@
 # Overview
 
-This is a Streamlit-based audio processing application that allows users to upload and process audio files. The application provides a web interface for handling MP3 and WAV audio files with size validation and processing capabilities. It uses PyDub for audio manipulation and includes progress tracking for user feedback during file processing operations.
+This is the Bell Music Creator - a Streamlit-based audio processing application that allows users to upload music files and combine them with bell sounds. The application crops music files to 3 minutes, adds fade effects, and appends bell files. It features a bell file library system where users can save and reuse bell files via a dropdown selector, along with the option to upload new bell files.
 
 # User Preferences
 
@@ -9,10 +9,11 @@ Preferred communication style: Simple, everyday language.
 # System Architecture
 
 ## Frontend Architecture
-- **Framework**: Streamlit for web interface
-- **Layout**: Wide layout configuration with custom page settings
-- **User Interface**: File upload components with real-time validation and progress indicators
-- **User Experience**: Progress bars and status text for operation feedback
+- **Framework**: Streamlit for web interface with Bell Music Creator branding
+- **Layout**: Wide layout configuration with two-column design for music and bell file inputs
+- **User Interface**: Music file upload + bell file dropdown selector with library management
+- **Bell File System**: Dropdown selector with existing bell files plus "Upload new bell file" option
+- **User Experience**: Progress bars, status text, and save-to-library functionality for new bell files
 
 ## Backend Architecture
 - **Core Processing**: Python-based audio processing using PyDub library
@@ -22,12 +23,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Data Storage
 - **Temporary Storage**: Uses Python's tempfile module for secure temporary file handling
+- **Bell File Library**: Persistent local storage in `bell_files/` directory for reusable bell files
 - **Memory Management**: In-memory audio processing with BytesIO streams
 - **File Constraints**: 100MB file size limit for practical performance
 
 ## Audio Processing Pipeline
 - **Supported Formats**: MP3 and WAV file formats
-- **Processing Chain**: File validation → temporary storage → PyDub processing → normalization
+- **Music Processing**: Crop to 3 minutes → apply 2-second fade out → combine with bell file
+- **Bell File Handling**: Load from library directory or temporary uploaded file
+- **Processing Chain**: File validation → temporary storage → PyDub processing → MP3 export
 - **Error Handling**: Comprehensive validation with user-friendly error messages
 
 # External Dependencies
