@@ -85,7 +85,7 @@ def process_audio_files(file1_data, file2_data, file1_name, file2_name, progress
         status_text.text(f"Cropping music file to {crop_duration} seconds...")
         
         # Crop first audio to specified duration
-        crop_duration_ms = crop_duration * 1000  # Convert to milliseconds
+        crop_duration_ms = int(crop_duration * 1000)  # Convert to milliseconds as integer
         if len(audio1) > crop_duration_ms:
             audio1_cropped = audio1[:crop_duration_ms]
         else:
@@ -95,7 +95,7 @@ def process_audio_files(file1_data, file2_data, file1_name, file2_name, progress
         status_text.text(f"Applying {fade_duration} second fade out effect...")
         
         # Apply fade out effect with specified duration
-        fade_duration_ms = fade_duration * 1000  # Convert to milliseconds
+        fade_duration_ms = int(fade_duration * 1000)  # Convert to milliseconds as integer
         audio1_with_fade = audio1_cropped.fade_out(fade_duration_ms)
         
         progress_bar.progress(70)
