@@ -139,7 +139,7 @@ def process_audio_files(file1_data, file2_data, file1_name, file2_name, progress
 
 def main():
     st.title("🔔 Bell Music Creator")
-    st.markdown("Upload two audio files to automatically process and combine them.")
+    st.markdown("Upload your music file and select the required bell to automatically create the required bell audio file for the bell system.")
     
     # Instructions
     with st.expander("📋 How it works", expanded=True):
@@ -190,21 +190,38 @@ def main():
     settings_col1, settings_col2 = st.columns(2)
     
     with settings_col1:
-        crop_duration = st.number_input(
-            "Music file length (seconds)",
-            min_value=10,
-            max_value=600,
-            value=180,
-            step=10,
-            help="How long to crop the music file (10 seconds to 10 minutes)"
-        )
+        st.write("**Music file length**")
+        duration_col1, duration_col2 = st.columns(2)
+        with duration_col1:
+            minutes = st.number_input(
+                "Minutes",
+                min_value=0,
+                max_value=10,
+                value=3,
+                step=1,
+                help="Minutes (0-10)"
+            )
+        with duration_col2:
+            seconds = st.number_input(
+                "Seconds",
+                min_value=0,
+                max_value=59,
+                value=0,
+                step=1,
+                help="Seconds (0-59)"
+            )
+        crop_duration = minutes * 60 + seconds
+        # Ensure minimum 10 seconds
+        if crop_duration < 10:
+            crop_duration = 10
+            st.warning("Minimum duration is 10 seconds")
     
     with settings_col2:
         fade_duration = st.number_input(
             "Fade out duration (seconds)",
             min_value=0.5,
             max_value=10.0,
-            value=2.0,
+            value=3.0,
             step=0.5,
             help="Length of fade out effect at the end of the music file"
         )
