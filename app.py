@@ -109,7 +109,7 @@ def process_audio_files(file1_data, file2_data, file1_name, file2_name, progress
         return None, f"Error processing audio files: {str(e)}"
 
 def main():
-    st.title("🎵 Audio File Processor")
+    st.title("🔔 Bell Music Creator")
     st.markdown("Upload two audio files to automatically process and combine them.")
     
     # Instructions
