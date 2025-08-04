@@ -262,9 +262,6 @@ def main():
                     bell_file_name = selected_bell
                     is_from_library = True
     
-    # Process button
-    st.markdown("---")
-    
     # Check if we have both music file and bell file ready
     has_music_file = uploaded_file1 is not None
     has_bell_file = (bell_file_name is not None and 
@@ -276,7 +273,6 @@ def main():
         
         if is_valid1:
             # Filename customization
-            st.markdown("---")
             st.subheader("📝 Output File Name")
             
             # Generate automatic filename
