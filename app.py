@@ -115,12 +115,12 @@ def main():
     # Instructions
     with st.expander("📋 How it works", expanded=True):
         st.markdown("""
-        1. **Upload first audio file** (MP3 or WAV) - will be cropped to exactly 3 minutes
-        2. **Upload second audio file** (MP3 or WAV) - will be appended to the first
+        1. **Upload music file** (MP3 or WAV) - will be cropped to exactly 3 minutes
+        2. **Upload bell audio file** (MP3 or WAV) - will be appended to the music
         3. The app will:
-           - Crop the first file to 3 minutes
-           - Add a 2-second fade out effect to the first file
-           - Append the second file to the processed first file
+           - Crop the music file to 3 minutes
+           - Add a 2-second fade out effect to the music file
+           - Append the bell audio file to the processed music file
            - Convert the result to MP3 format
         4. **Download** your processed audio file
         """)
@@ -129,10 +129,10 @@ def main():
     col1, col2 = st.columns(2)
     
     with col1:
-        st.subheader("First Audio File")
+        st.subheader("Music File")
         st.caption("Will be cropped to 3 minutes with fade out")
         uploaded_file1 = st.file_uploader(
-            "Choose first audio file",
+            "Choose music file",
             type=['mp3', 'wav'],
             key="file1",
             help="Upload MP3 or WAV file (max 100MB)"
@@ -147,10 +147,10 @@ def main():
                 st.error(f"❌ {message1}")
     
     with col2:
-        st.subheader("Second Audio File")
-        st.caption("Will be appended to the processed first file")
+        st.subheader("Bell Audio File")
+        st.caption("Will be appended to the processed music file")
         uploaded_file2 = st.file_uploader(
-            "Choose second audio file",
+            "Choose bell audio file",
             type=['mp3', 'wav'],
             key="file2",
             help="Upload MP3 or WAV file (max 100MB)"
