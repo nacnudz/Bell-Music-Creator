@@ -8,6 +8,8 @@ services:
     volumes:
       # Persist bell files between container restarts
       - bell_files_data:/app/bell_files
+      # Mount algo config file for easy editing
+      - ./algo_config.json:/app/algo_config.json
       # Optional: Mount local directory for development
       # - ./bell_files:/app/bell_files
     environment:
