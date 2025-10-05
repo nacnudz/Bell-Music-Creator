@@ -52,7 +52,7 @@ def validate_audio_file(uploaded_file):
     
     return True, "Valid file"
 
-def process_audio_files(file1_data, file2_data, file1_name, file2_name, progress_bar, status_text, is_file2_from_library=False, crop_duration=180, fade_duration=2):
+def process_audio_files(file1_data, file2_data, file1_name, file2_name, progress_bar, status_text, is_file2_from_library=False, crop_duration=180, fade_out_duration=2.0, trim_start=0, fade_in_duration=0.0):
     """Process the two audio files according to requirements"""
     try:
         # Update progress
@@ -82,6 +82,13 @@ def process_audio_files(file1_data, file2_data, file1_name, file2_name, progress
                 audio2 = AudioSegment.from_file(tmp2.name)
         
         progress_bar.progress(40)
+        
+        # Trim start if specified
+        if trim_start > 0:
+            status_text.text(f"Trimming first {trim_start} seconds from start...")
+            trim_start_ms = int(trim_start * 1000)
+            audio1 = audio1[trim_start_ms:]
+        
         status_text.text(f"Cropping music file to {crop_duration} seconds...")
         
         # Crop first audio to specified duration
@@ -92,11 +99,18 @@ def process_audio_files(file1_data, file2_data, file1_name, file2_name, progress
             audio1_cropped = audio1
         
         progress_bar.progress(55)
-        status_text.text(f"Applying {fade_duration} second fade out effect...")
+        
+        # Apply fade in effect if specified
+        if fade_in_duration > 0:
+            status_text.text(f"Applying {fade_in_duration} second fade in effect...")
+            fade_in_duration_ms = int(fade_in_duration * 1000)
+            audio1_cropped = audio1_cropped.fade_in(fade_in_duration_ms)
+        
+        status_text.text(f"Applying {fade_out_duration} second fade out effect...")
         
         # Apply fade out effect with specified duration
-        fade_duration_ms = int(fade_duration * 1000)  # Convert to milliseconds as integer
-        audio1_with_fade = audio1_cropped.fade_out(fade_duration_ms)
+        fade_out_duration_ms = int(fade_out_duration * 1000)  # Convert to milliseconds as integer
+        audio1_with_fade = audio1_cropped.fade_out(fade_out_duration_ms)
         
         progress_bar.progress(70)
         status_text.text("Combining audio files...")
@@ -148,8 +162,10 @@ def main():
         2. **Choose bell file** - select from existing bell files or upload a new one
         3. **Customize settings** - adjust crop length and fade out duration
         4. The app will:
+           - Trim the start of the music file (optional)
            - Crop the music file to your specified duration
-           - Add a fade out effect with your chosen duration
+           - Add fade in effect (optional)
+           - Add fade out effect with your chosen duration
            - Append the selected bell file to the processed music file
            - Convert the result to MP3 format
         5. **Download** your processed audio file with automatic naming
@@ -185,6 +201,30 @@ def main():
     settings_col1, settings_col2 = st.columns(2)
     
     with settings_col1:
+        st.write("**Trim start of audio**")
+        trim_col1, trim_col2 = st.columns(2)
+        with trim_col1:
+            trim_minutes = st.number_input(
+                "Minutes",
+                min_value=0,
+                max_value=10,
+                value=0,
+                step=1,
+                help="Minutes to skip from the start (0-10)",
+                key="trim_minutes"
+            )
+        with trim_col2:
+            trim_seconds = st.number_input(
+                "Seconds",
+                min_value=0,
+                max_value=59,
+                value=0,
+                step=1,
+                help="Seconds to skip from the start (0-59)",
+                key="trim_seconds"
+            )
+        trim_start = trim_minutes * 60 + trim_seconds
+        
         st.write("**Music file length**")
         duration_col1, duration_col2 = st.columns(2)
         with duration_col1:
@@ -212,20 +252,38 @@ def main():
             st.warning("Minimum duration is 10 seconds")
     
     with settings_col2:
+        st.write("**Fade in duration**")
+        fade_in_duration = st.number_input(
+            "Seconds",
+            min_value=0.0,
+            max_value=10.0,
+            value=0.0,
+            step=0.5,
+            help="Length of fade in effect at the start of the music file",
+            key="fade_in_seconds"
+        )
+        
         st.write("**Fade out duration**")
-        fade_duration = st.number_input(
+        fade_out_duration = st.number_input(
             "Seconds",
             min_value=0.5,
             max_value=10.0,
             value=3.0,
             step=0.5,
             help="Length of fade out effect at the end of the music file",
-            key="fade_seconds"
+            key="fade_out_seconds"
         )
     
     # Update music file caption with current settings
     if uploaded_file1:
-        st.caption(f"Will be cropped to {crop_duration} seconds with {fade_duration}s fade out")
+        caption_parts = []
+        if trim_start > 0:
+            caption_parts.append(f"skip first {trim_start}s")
+        caption_parts.append(f"crop to {crop_duration}s")
+        if fade_in_duration > 0:
+            caption_parts.append(f"{fade_in_duration}s fade in")
+        caption_parts.append(f"{fade_out_duration}s fade out")
+        st.caption(f"Processing: {', '.join(caption_parts)}")
     
     st.markdown("---")
     with col2:
@@ -324,7 +382,9 @@ def main():
                     status_text,
                     is_from_library,
                     crop_duration,
-                    fade_duration
+                    fade_out_duration,
+                    trim_start,
+                    fade_in_duration
                 )
                 
                 if error:
@@ -361,8 +421,10 @@ def main():
         st.markdown("""
         **Supported Formats:** MP3, WAV  
         **Processing Steps:**
+        - Trim start: Optional trimming from the beginning (0-600 seconds)
         - Music file: Cropped to your specified duration (10-600 seconds)
-        - Fade out: Customizable fade duration (0.5-10 seconds) applied to end of music file
+        - Fade in: Optional fade in effect (0-10 seconds) applied at the start
+        - Fade out: Customizable fade out duration (0.5-10 seconds) applied to end of music file
         - Combination: Bell file appended seamlessly after fade
         - Output: MP3 format at 192kbps bitrate
         - Naming: Automatic naming as "MusicFileName_Bell.mp3" with option to customize

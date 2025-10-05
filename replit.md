@@ -1,6 +1,6 @@
 # Overview
 
-This is the Bell Music Creator - a Streamlit-based audio processing application that allows users to upload music files and combine them with bell sounds. The application crops music files to 3 minutes, adds fade effects, and appends bell files. It features a bell file library system where users can save and reuse bell files via a dropdown selector, along with the option to upload new bell files.
+This is the Bell Music Creator - a Streamlit-based audio processing application that allows users to upload music files and combine them with bell sounds. The application supports trimming the start of audio files, cropping to custom durations, and adding fade in/out effects before appending bell files. It features a bell file library system where users can save and reuse bell files via a dropdown selector, along with the option to upload new bell files.
 
 # User Preferences
 
@@ -13,7 +13,7 @@ Preferred communication style: Simple, everyday language.
 - **Layout**: Wide layout configuration with two-column design for music and bell file inputs
 - **User Interface**: Music file upload + bell file dropdown selector with library management
 - **Bell File System**: Dropdown selector with existing bell files plus "Upload new bell file" option
-- **User Experience**: Progress bars, status text, and save-to-library functionality for new bell files
+- **User Experience**: Progress bars, status text, save-to-library functionality for new bell files, and dynamic processing caption showing active settings
 
 ## Backend Architecture
 - **Core Processing**: Python-based audio processing using PyDub library
@@ -29,7 +29,12 @@ Preferred communication style: Simple, everyday language.
 
 ## Audio Processing Pipeline
 - **Supported Formats**: MP3 and WAV file formats
-- **Music Processing**: Crop to 3 minutes → apply 2-second fade out → combine with bell file
+- **Music Processing**: 
+  - Trim start (optional, 0-600 seconds) - remove audio from beginning
+  - Crop to custom duration (10-600 seconds) - reduce to specified length
+  - Fade in effect (optional, 0-10 seconds) - gradual volume increase at start
+  - Fade out effect (0.5-10 seconds) - gradual volume decrease at end
+  - Combine with bell file - append bell audio seamlessly
 - **Bell File Handling**: Load from library directory or temporary uploaded file
 - **Processing Chain**: File validation → temporary storage → PyDub processing → MP3 export
 - **Error Handling**: Comprehensive validation with user-friendly error messages
@@ -60,5 +65,5 @@ The application is fully containerized using Docker and Docker Compose for easy 
 - **Docker Compose**: Service configuration with volume persistence for bell files
 - **Health Checks**: Automated container health monitoring
 - **Data Persistence**: Bell files stored in Docker volumes to persist between restarts
-- **Port Mapping**: Application accessible on port 8765
+- **Port Mapping**: Application accessible on port 5000 (Replit) or 8765 (Docker)
 - **Environment**: Streamlit configured for headless operation
