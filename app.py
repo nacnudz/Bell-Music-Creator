@@ -5,6 +5,8 @@ import io
 from pydub import AudioSegment
 from pydub.effects import normalize
 import time
+import requests
+from requests.auth import HTTPBasicAuth
 
 # Configure page
 st.set_page_config(
@@ -33,6 +35,49 @@ def save_bell_file(uploaded_file):
     with open(file_path, "wb") as f:
         f.write(uploaded_file.getbuffer())
     return file_path
+
+def convert_to_algo_wav(audio_segment, filename):
+    """Convert AudioSegment to Algo 8301 compatible WAV format"""
+    # Algo 8301 requirements: 8kHz or 16kHz, mono, 16-bit PCM
+    # Convert to mono
+    audio_mono = audio_segment.set_channels(1)
+    # Convert to 16kHz sample rate
+    audio_16khz = audio_mono.set_frame_rate(16000)
+    # Export as WAV
+    wav_buffer = io.BytesIO()
+    audio_16khz.export(wav_buffer, format="wav", parameters=["-acodec", "pcm_s16le"])
+    wav_buffer.seek(0)
+    return wav_buffer.getvalue()
+
+def upload_to_algo8301(audio_data, filename, device_ip, username, password):
+    """Upload audio file to Algo 8301 IP Paging Adapter"""
+    try:
+        # Ensure filename has .wav extension
+        if not filename.lower().endswith('.wav'):
+            filename = filename.rsplit('.', 1)[0] + '.wav'
+        
+        # Clean filename: max 32 chars, no spaces
+        filename = filename.replace(' ', '_')[:32]
+        
+        # Prepare the upload
+        url = f"http://{device_ip}/api/files/upload"
+        files = {'file': (filename, audio_data, 'audio/wav')}
+        auth = HTTPBasicAuth(username, password)
+        
+        # Upload with timeout
+        response = requests.post(url, files=files, auth=auth, timeout=30)
+        
+        if response.status_code == 200:
+            return True, f"Successfully uploaded {filename} to Algo 8301"
+        else:
+            return False, f"Upload failed: {response.status_code} - {response.text}"
+            
+    except requests.exceptions.Timeout:
+        return False, "Upload failed: Connection timeout. Check device IP address."
+    except requests.exceptions.ConnectionError:
+        return False, "Upload failed: Cannot connect to device. Check IP address and network."
+    except Exception as e:
+        return False, f"Upload failed: {str(e)}"
 
 def validate_audio_file(uploaded_file):
     """Validate if the uploaded file is a supported audio format"""
@@ -137,7 +182,7 @@ def process_audio_files(file1_data, file2_data, file1_name, file2_name, progress
         except:
             pass  # Ignore cleanup errors
         
-        return output_buffer.getvalue(), None
+        return output_buffer.getvalue(), combined_audio, None
         
     except Exception as e:
         # Clean up temporary files in case of error
@@ -149,7 +194,7 @@ def process_audio_files(file1_data, file2_data, file1_name, file2_name, progress
         except:
             pass
         
-        return None, f"Error processing audio files: {str(e)}"
+        return None, None, f"Error processing audio files: {str(e)}"
 
 def main():
     st.title("🔔 Bell Music Creator")
@@ -367,13 +412,43 @@ def main():
                 
             st.info(f"Download file name: **{final_filename}**")
             
+            # Algo 8301 Configuration (optional)
+            st.markdown("---")
+            st.subheader("📡 Algo 8301 IP Paging Adapter (Optional)")
+            
+            with st.expander("Configure Algo 8301 Upload"):
+                st.markdown("Upload processed audio directly to your Algo 8301 IP Paging Adapter")
+                
+                algo_col1, algo_col2 = st.columns(2)
+                with algo_col1:
+                    algo_ip = st.text_input(
+                        "Device IP Address",
+                        value="",
+                        placeholder="e.g., 192.168.1.100",
+                        help="IP address of your Algo 8301 device"
+                    )
+                    algo_username = st.text_input(
+                        "Username",
+                        value="admin",
+                        help="Device login username (default: admin)"
+                    )
+                with algo_col2:
+                    algo_password = st.text_input(
+                        "Password",
+                        type="password",
+                        value="",
+                        help="Device login password"
+                    )
+                    
+                st.info("ℹ️ Audio will be automatically converted to Algo 8301 compatible format (16kHz WAV, mono)")
+            
             if st.button("🎵 Process Audio Files", type="primary", use_container_width=True):
                 # Create progress indicators
                 progress_bar = st.progress(0)
                 status_text = st.empty()
                 
                 # Process the files
-                processed_data, error = process_audio_files(
+                processed_data, audio_segment, error = process_audio_files(
                     uploaded_file1.getvalue(),
                     bell_file_data,
                     uploaded_file1.name,
@@ -394,6 +469,10 @@ def main():
                 else:
                     st.success("✅ Audio processing completed successfully!")
                     
+                    # Store audio segment in session state for Algo upload
+                    st.session_state['processed_audio_segment'] = audio_segment
+                    st.session_state['processed_filename'] = final_filename
+                    
                     # Provide download button with custom filename
                     st.download_button(
                         label="📥 Download Processed Audio (MP3)",
@@ -403,6 +482,27 @@ def main():
                         type="secondary",
                         use_container_width=True
                     )
+                    
+                    # Algo 8301 Upload button (if configured)
+                    if algo_ip and algo_password:
+                        if st.button("📡 Upload to Algo 8301", type="secondary", use_container_width=True):
+                            with st.spinner("Converting and uploading to Algo 8301..."):
+                                # Convert to Algo-compatible WAV
+                                wav_data = convert_to_algo_wav(audio_segment, final_filename)
+                                
+                                # Upload to device
+                                success, message = upload_to_algo8301(
+                                    wav_data,
+                                    final_filename,
+                                    algo_ip,
+                                    algo_username,
+                                    algo_password
+                                )
+                                
+                                if success:
+                                    st.success(f"✅ {message}")
+                                else:
+                                    st.error(f"❌ {message}")
                     
                     # Clear progress indicators
                     progress_bar.empty()
