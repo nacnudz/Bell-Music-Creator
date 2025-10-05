@@ -410,23 +410,38 @@ def main():
             # Filename customization
             st.subheader("📝 Output File Name")
             
-            # Generate automatic filename
-            music_basename = os.path.splitext(uploaded_file1.name)[0]
-            auto_filename = f"{music_basename}_Bell.mp3"
+            # Create week options
+            week_options = [f"Week {i} Bell" for i in range(1, 12)] + ["Custom"]
             
-            custom_filename = st.text_input(
-                "File name (without extension)",
-                value=os.path.splitext(auto_filename)[0],
-                help="The file will be saved as MP3 format"
+            selected_option = st.selectbox(
+                "Select output file name",
+                options=week_options,
+                help="Choose a week bell name or select Custom to enter your own"
             )
             
-            # Ensure .mp3 extension
-            if not custom_filename.endswith('.mp3'):
-                final_filename = f"{custom_filename}.mp3"
-            else:
-                final_filename = custom_filename
+            # Determine filename based on selection
+            if selected_option == "Custom":
+                # Generate automatic filename for custom
+                music_basename = os.path.splitext(uploaded_file1.name)[0]
+                auto_filename = f"{music_basename}_Bell.mp3"
                 
-            st.info(f"Download file name: **{final_filename}**")
+                custom_filename = st.text_input(
+                    "File name (without extension)",
+                    value=os.path.splitext(auto_filename)[0],
+                    help="The file will be saved as MP3 format"
+                )
+                
+                # Ensure .mp3 extension
+                if not custom_filename.endswith('.mp3'):
+                    final_filename = f"{custom_filename}.mp3"
+                else:
+                    final_filename = custom_filename
+            else:
+                # Extract week number from selection (e.g., "Week 1 Bell" -> 1)
+                week_num = selected_option.split()[1]
+                final_filename = f"week_{week_num}_bell_music.mp3"
+                
+            st.info(f"Output file name: **{final_filename}**")
             
             # Load Algo 8301 configuration from file
             algo_config = load_algo_config()
@@ -458,44 +473,52 @@ def main():
                 else:
                     st.success("✅ Audio processing completed successfully!")
                     
-                    # Store audio segment in session state for Algo upload
+                    # Store audio segment in session state for buttons
                     st.session_state['processed_audio_segment'] = audio_segment
                     st.session_state['processed_filename'] = final_filename
-                    
-                    # Provide download button with custom filename
-                    st.download_button(
-                        label="📥 Download Processed Audio (MP3)",
-                        data=processed_data,
-                        file_name=final_filename,
-                        mime="audio/mpeg",
-                        type="secondary",
-                        use_container_width=True
-                    )
-                    
-                    # Algo 8301 Upload button (if configured in config file)
-                    if algo_config.get('enabled') and algo_config.get('device_ip') and algo_config.get('password'):
-                        if st.button("📡 Upload to Algo 8301", type="secondary", use_container_width=True):
-                            with st.spinner("Converting and uploading to Algo 8301..."):
-                                # Convert to MP3 format
-                                mp3_data = convert_to_algo_mp3(audio_segment, final_filename)
-                                
-                                # Upload to device
-                                success, message = upload_to_algo8301(
-                                    mp3_data,
-                                    final_filename,
-                                    algo_config['device_ip'],
-                                    algo_config.get('username', 'admin'),
-                                    algo_config['password']
-                                )
-                                
-                                if success:
-                                    st.success(f"✅ {message}")
-                                else:
-                                    st.error(f"❌ {message}")
+                    st.session_state['processed_data'] = processed_data
                     
                     # Clear progress indicators
                     progress_bar.empty()
                     status_text.empty()
+                    
+                    # Create two columns for download and upload buttons
+                    btn_col1, btn_col2 = st.columns(2)
+                    
+                    with btn_col1:
+                        # Download button
+                        st.download_button(
+                            label="📥 Download to Computer",
+                            data=processed_data,
+                            file_name=final_filename,
+                            mime="audio/mpeg",
+                            type="primary",
+                            use_container_width=True
+                        )
+                    
+                    with btn_col2:
+                        # Upload to Bell System button (if configured in config file)
+                        if algo_config.get('enabled') and algo_config.get('device_ip') and algo_config.get('password'):
+                            if st.button("📡 Upload to Bell System", type="primary", use_container_width=True):
+                                with st.spinner("Converting and uploading to Bell System..."):
+                                    # Convert to MP3 format
+                                    mp3_data = convert_to_algo_mp3(audio_segment, final_filename)
+                                    
+                                    # Upload to device
+                                    success, message = upload_to_algo8301(
+                                        mp3_data,
+                                        final_filename,
+                                        algo_config['device_ip'],
+                                        algo_config.get('username', 'admin'),
+                                        algo_config['password']
+                                    )
+                                    
+                                    if success:
+                                        st.success(f"✅ {message}")
+                                    else:
+                                        st.error(f"❌ {message}")
+                        else:
+                            st.info("Bell System upload not configured")
         else:
             st.error("❌ Please upload a valid music file before processing.")
     else:
