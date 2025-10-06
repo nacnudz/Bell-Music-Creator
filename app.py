@@ -38,6 +38,7 @@ def save_bell_file(uploaded_file):
 
 def load_algo_config():
     """Load Algo 8301 configuration from file"""
+    import json
     config_file = "algo_config.json"
     default_config = {
         "enabled": False,
@@ -49,10 +50,14 @@ def load_algo_config():
     if os.path.exists(config_file):
         try:
             with open(config_file, 'r') as f:
-                import json
-                return json.load(f)
-        except:
+                config = json.load(f)
+                print(f"DEBUG: Loaded config: enabled={config.get('enabled')}, ip={config.get('device_ip')}, has_password={bool(config.get('password'))}")
+                return config
+        except Exception as e:
+            print(f"DEBUG: Error loading config: {e}")
             return default_config
+    else:
+        print(f"DEBUG: Config file not found at {os.path.abspath(config_file)}")
     return default_config
 
 def convert_to_algo_mp3(audio_segment, filename):
@@ -443,9 +448,6 @@ def main():
                 
             st.info(f"Output file name: **{final_filename}**")
             
-            # Load Algo 8301 configuration from file
-            algo_config = load_algo_config()
-            
             if st.button("🎵 Process Audio Files", type="primary", use_container_width=True):
                 # Create progress indicators
                 progress_bar = st.progress(0)
@@ -482,6 +484,9 @@ def main():
                     progress_bar.empty()
                     status_text.empty()
                     
+                    # Load Algo 8301 configuration from file (reload after processing)
+                    algo_config = load_algo_config()
+                    
                     # Create two columns for download and upload buttons
                     btn_col1, btn_col2 = st.columns(2)
                     
@@ -498,7 +503,13 @@ def main():
                     
                     with btn_col2:
                         # Upload to Bell System button (if configured in config file)
-                        if algo_config.get('enabled') and algo_config.get('device_ip') and algo_config.get('password'):
+                        is_enabled = algo_config.get('enabled', False)
+                        has_ip = bool(algo_config.get('device_ip', ''))
+                        has_password = bool(algo_config.get('password', ''))
+                        
+                        st.write(f"Debug: enabled={is_enabled}, has_ip={has_ip}, has_password={has_password}")
+                        
+                        if is_enabled and has_ip and has_password:
                             if st.button("📡 Upload to Bell System", type="primary", use_container_width=True):
                                 with st.spinner("Converting and uploading to Bell System..."):
                                     # Convert to MP3 format
