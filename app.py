@@ -479,57 +479,64 @@ def main():
                     st.session_state['processed_audio_segment'] = audio_segment
                     st.session_state['processed_filename'] = final_filename
                     st.session_state['processed_data'] = processed_data
+                    st.session_state['processing_complete'] = True
                     
                     # Clear progress indicators
                     progress_bar.empty()
                     status_text.empty()
-                    
-                    # Load Algo 8301 configuration from file (reload after processing)
-                    algo_config = load_algo_config()
-                    
-                    # Create two columns for download and upload buttons
-                    btn_col1, btn_col2 = st.columns(2)
-                    
-                    with btn_col1:
-                        # Download button
+            
+            # Show buttons if processing is complete (outside the button handler)
+            if st.session_state.get('processing_complete', False):
+                st.markdown("---")
+                
+                # Load Algo 8301 configuration from file
+                algo_config = load_algo_config()
+                
+                # Create two columns for download and upload buttons
+                btn_col1, btn_col2 = st.columns(2)
+                
+                with btn_col1:
+                    # Download button
+                    if 'processed_data' in st.session_state:
                         st.download_button(
                             label="📥 Download to Computer",
-                            data=processed_data,
-                            file_name=final_filename,
+                            data=st.session_state['processed_data'],
+                            file_name=st.session_state['processed_filename'],
                             mime="audio/mpeg",
                             type="primary",
                             use_container_width=True
                         )
+                
+                with btn_col2:
+                    # Upload to Bell System button (if configured in config file)
+                    is_enabled = algo_config.get('enabled', False)
+                    has_ip = bool(algo_config.get('device_ip', ''))
+                    has_password = bool(algo_config.get('password', ''))
                     
-                    with btn_col2:
-                        # Upload to Bell System button (if configured in config file)
-                        is_enabled = algo_config.get('enabled', False)
-                        has_ip = bool(algo_config.get('device_ip', ''))
-                        has_password = bool(algo_config.get('password', ''))
-                        
-                        st.write(f"Debug: enabled={is_enabled}, has_ip={has_ip}, has_password={has_password}")
-                        
-                        if is_enabled and has_ip and has_password:
-                            if st.button("📡 Upload to Bell System", type="primary", use_container_width=True):
-                                with st.spinner("Converting and uploading to Bell System..."):
-                                    # Convert to MP3 format
-                                    mp3_data = convert_to_algo_mp3(audio_segment, final_filename)
-                                    
-                                    # Upload to device
-                                    success, message = upload_to_algo8301(
-                                        mp3_data,
-                                        final_filename,
-                                        algo_config['device_ip'],
-                                        algo_config.get('username', 'admin'),
-                                        algo_config['password']
-                                    )
-                                    
-                                    if success:
-                                        st.success(f"✅ {message}")
-                                    else:
-                                        st.error(f"❌ {message}")
-                        else:
-                            st.info("Bell System upload not configured")
+                    if is_enabled and has_ip and has_password:
+                        if st.button("📡 Upload to Bell System", type="primary", use_container_width=True, key="upload_btn"):
+                            with st.spinner("Converting and uploading to Bell System..."):
+                                # Convert to MP3 format
+                                mp3_data = convert_to_algo_mp3(
+                                    st.session_state['processed_audio_segment'],
+                                    st.session_state['processed_filename']
+                                )
+                                
+                                # Upload to device
+                                success, message = upload_to_algo8301(
+                                    mp3_data,
+                                    st.session_state['processed_filename'],
+                                    algo_config['device_ip'],
+                                    algo_config.get('username', 'admin'),
+                                    algo_config['password']
+                                )
+                                
+                                if success:
+                                    st.success(f"✅ {message}")
+                                else:
+                                    st.error(f"❌ {message}")
+                    else:
+                        st.info("Bell System upload not configured")
         else:
             st.error("❌ Please upload a valid music file before processing.")
     else:
